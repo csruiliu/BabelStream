@@ -91,12 +91,33 @@ int main(int argc, char *argv[])
       << "Version: " << VERSION_STRING << std::endl
       << "Implementation: " << IMPLEMENTATION_STRING << std::endl;
   }
+  
+  // Add timing measurement around the main run execution
+  std::chrono::high_resolution_clock::time_point main_start, main_end;
+
+  main_start = std::chrono::high_resolution_clock::now();
 
   if (use_float)
     run<float>();
   else
     run<double>(); 
+  main_end = std::chrono::high_resolution_clock::now();
+  
+  // Calculate total execution time
+  double main_elapsed = std::chrono::duration_cast<std::chrono::duration<double>>(main_end - main_start).count();
 
+  // Print total execution time
+  if (output_as_csv)
+  {
+    std::cout << "total_execution_time," << std::setprecision(8) << std::fixed << main_elapsed << std::endl;
+  }
+  else
+  {
+    std::cout << "\n=== Total Execution Time ===" << std::endl;
+    std::cout << "Total benchmark runtime: " << std::setprecision(6) << std::fixed 
+              << main_elapsed << " seconds" << std::endl;
+    std::cout << "=============================" << std::endl;
+  }
 }
 
 
@@ -503,6 +524,78 @@ void run()
         << bandwidth << std::endl;
     }
   }
+  /* 
+  if (!output_as_csv)
+  {
+    std::cout << "\n=== Detailed Timing Measurements ===" << std::endl;
+  }
+  */
+  double total_sum = 0.0;
+  std::vector<std::string> labels;
+
+  // Set up labels based on benchmark selection
+  if (selection == Benchmark::All)
+  {
+    labels = {"Copy", "Mul", "Add", "Triad", "Dot"};
+  }
+  else if (selection == Benchmark::Triad)
+  {
+    labels = {"Triad"};
+  }
+  else if (selection == Benchmark::Nstream)
+  {
+    labels = {"Nstream"};
+  }
+  
+  // Print timing measurements and calculate sum
+  for (int i = 0; i < timings.size(); ++i)
+  {
+    /*
+    if (!output_as_csv)
+    {
+      std::cout << "\n" << labels[i] << " kernel timings:" << std::endl;
+    }
+    */
+    for (int j = 0; j < timings[i].size(); ++j)
+    {
+      /*
+      if (!output_as_csv)
+      {
+        std::cout << "  Run " << std::setw(3) << j << ": " 
+                  << std::setprecision(6) << std::fixed 
+                  << timings[i][j] << " seconds" << std::endl;
+      }
+      */
+      total_sum += timings[i][j];
+    }
+    
+  }
+  
+  // Print total sum
+  if (output_as_csv)
+  {
+    std::cout << "timing_summary,total_measurements,total_sum_seconds" << std::endl;
+    std::cout << "all_timings," << (timings.size() * (timings.empty() ? 0 : timings[0].size())) 
+              << "," << std::setprecision(8) << std::fixed << total_sum << std::endl;
+  }
+  else
+  {
+    int total_measurements = 0;
+    for (const auto& timing_set : timings)
+    {
+      total_measurements += timing_set.size();
+    }
+  
+    std::cout << "\n=== Timing Summary ===" << std::endl;
+    std::cout << "Total measurements: " << total_measurements << std::endl;
+    std::cout << "Sum of all timings: " << std::setprecision(8) << std::fixed 
+              << total_sum << " seconds" << std::endl;
+    //std::cout << "Average timing: " << std::setprecision(8) << std::fixed 
+    //          << (total_measurements > 0 ? total_sum / total_measurements : 0.0) 
+    //          << " seconds" << std::endl;
+    std::cout << "================================" << std::endl;
+  }
+
 
   delete stream;
 
