@@ -109,15 +109,17 @@ int main(int argc, char *argv[])
   // Print total execution time
   if (output_as_csv)
   {
-    std::cout << "total_execution_time," << std::setprecision(8) << std::fixed << main_elapsed << std::endl;
+    std::cout << "total_execution_time," << std::setprecision(3) << std::fixed << main_elapsed << std::endl;
   }
   else
   {
     std::cout << "\n=== Total Execution Time ===" << std::endl;
-    std::cout << "Total benchmark runtime: " << std::setprecision(6) << std::fixed 
+    std::cout << "Total execution ime: " << std::setprecision(3) << std::fixed 
               << main_elapsed << " seconds" << std::endl;
     std::cout << "=============================" << std::endl;
   }
+
+
 }
 
 
@@ -570,33 +572,49 @@ void run()
     }
     
   }
-  
-  // Print total sum
+
+  // Calculate total bytes transferred based on benchmark selection
+  double total_bytes = 0.0;
+  if (selection == Benchmark::All) {
+    // see source code from line 465 -469
+    total_bytes = (2 + 2 + 3 + 3 + 2) * (use_float ? sizeof(float) : sizeof(double)) * ARRAY_SIZE * num_times;
+  } else if (selection == Benchmark::Triad) {
+    // Triad: 3 arrays (read 2, write 1)
+    total_bytes = 3 * (use_float ? sizeof(float) : sizeof(double)) * ARRAY_SIZE * num_times;
+  } else if (selection == Benchmark::Nstream) {
+    // Nstream typically involves multiple arrays - you'll need to check the actual kernel
+    // For now, assuming similar to triad
+    total_bytes = 3 * (use_float ? sizeof(float) : sizeof(double)) * ARRAY_SIZE * num_times;
+  }
+
+  // Calculate overall memory bandwidth in GB/s
+  double overall_bandwidth_gbs = (total_bytes / 1.0e9) / total_sum;
+
+  int total_measurements = 0;
+  for (const auto& timing_set : timings)
+  {
+    total_measurements += timing_set.size();
+  }
+
   if (output_as_csv)
   {
-    std::cout << "timing_summary,total_measurements,total_sum_seconds" << std::endl;
-    std::cout << "all_timings," << (timings.size() * (timings.empty() ? 0 : timings[0].size())) 
-              << "," << std::setprecision(8) << std::fixed << total_sum << std::endl;
-  }
-  else
-  {
-    int total_measurements = 0;
-    for (const auto& timing_set : timings)
-    {
-      total_measurements += timing_set.size();
-    }
-  
-    std::cout << "\n=== Timing Summary ===" << std::endl;
-    std::cout << "Total measurements: " << total_measurements << std::endl;
-    std::cout << "Sum of all timings: " << std::setprecision(8) << std::fixed 
+    std::cout << "overall_bandwidth_gbs" << csv_separator << std::fixed << std::setprecision(3) << overall_bandwidth_gbs << std::endl;
+    std::cout << "total_execution_time_s" << csv_separator << std::fixed << std::setprecision(3) << total_sum << std::endl;
+    std::cout << "total_data_gb" << csv_separator << std::fixed << std::setprecision(3) << total_bytes / 1.0e9 << std::endl;
+    std::cout << "total_measurements" << csv_separator << total_measurements << std::endl;
+  } else {
+    // Print overall bandwidth
+    std::cout << "\n" << std::string(50, '=') << std::endl;
+    std::cout << "Overall Memory Bandwidth: " << std::fixed << std::setprecision(3) 
+              << overall_bandwidth_gbs << " GB/s" << std::endl;
+    std::cout << "Total kernel execution time: " << std::fixed << std::setprecision(3) 
               << total_sum << " seconds" << std::endl;
-    //std::cout << "Average timing: " << std::setprecision(8) << std::fixed 
-    //          << (total_measurements > 0 ? total_sum / total_measurements : 0.0) 
-    //          << " seconds" << std::endl;
-    std::cout << "================================" << std::endl;
-  }
-
-
+    std::cout << "Total data transferred: " << std::fixed << std::setprecision(3) 
+              << total_bytes / 1.0e9 << " GB" << std::endl;
+    std::cout << "Total measurements: " << total_measurements << std::endl;
+    std::cout << std::string(50, '=') << std::endl;
+  } 
+  
   delete stream;
 
 }
