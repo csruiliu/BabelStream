@@ -552,22 +552,8 @@ void run()
   // Print timing measurements and calculate sum
   for (int i = 0; i < timings.size(); ++i)
   {
-    /*
-    if (!output_as_csv)
-    {
-      std::cout << "\n" << labels[i] << " kernel timings:" << std::endl;
-    }
-    */
     for (int j = 0; j < timings[i].size(); ++j)
     {
-      /*
-      if (!output_as_csv)
-      {
-        std::cout << "  Run " << std::setw(3) << j << ": " 
-                  << std::setprecision(6) << std::fixed 
-                  << timings[i][j] << " seconds" << std::endl;
-      }
-      */
       total_sum += timings[i][j];
     }
     
